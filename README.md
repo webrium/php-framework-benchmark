@@ -32,7 +32,7 @@ Each endpoint returns the same 10-user dataset. No database queries are involved
 
 ## Results
 
-> Tested on: June 2025
+> Tested on: June 16, 2026
 > All frameworks run with default configuration. No caching layers, no query optimizers, no custom FPM tuning.
 
 ### /bench/render
