@@ -1,0 +1,43 @@
+{
+  "name": "webrium/webrium",
+  "description": "PHP Framework",
+  "type": "project",
+  "require": {
+    "php": ">=8.1.0",
+    "webrium/core": "^4.0.0",
+    "webrium/foxdb": "^4.0.0",
+    "webrium/view": "^2.0.0",
+    "webrium/console": "^2.0.0"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "benjamin-khalife",
+      "email": "nvioir@gmail.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "scripts": {
+    "serve": "php -S 127.0.0.1:8000 -t public",
+    "post-root-package-install": [
+        "php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+    ],
+    "copy-webrium-bin": [
+        "php -r \"\\$src = 'vendor/webrium/console/webrium'; \\$dest = 'webrium'; if (file_exists(\\$src)) { copy(\\$src, \\$dest); chmod(\\$dest, 0755); echo 'webrium binary updated.' . PHP_EOL; } else { echo 'webrium binary not found in vendor.' . PHP_EOL; }\""
+    ],
+    "post-install-cmd": [
+        "@copy-webrium-bin"
+    ],
+    "post-update-cmd": [
+        "@copy-webrium-bin"
+    ],
+    "post-create-project-cmd": [
+        "php -r \"echo PHP_EOL . '✅ Webrium installed successfully!' . PHP_EOL . '👉 Run: npm install && npm run dev' . PHP_EOL . PHP_EOL;\""
+    ]
+},
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    }
+  }
+}

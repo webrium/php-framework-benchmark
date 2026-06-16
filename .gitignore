@@ -1,0 +1,6 @@
+.env
+laravel-app/.env
+laravel-app/vendor
+
+webrium-app/vendor
+webrium-app/.env
