@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  laravel:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile.laravel
+    container_name: benchmark-laravel
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./laravel-app:/var/www/laravel
+    environment:
+      DB_HOST: "host.docker.internal"
+      DB_PORT: "3306"
+      DB_DATABASE: "benchmark"
+      DB_USERNAME: "root"
+      DB_PASSWORD: ""
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  webrium:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile.webrium
+    container_name: benchmark-webrium
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./webrium-app:/var/www/webrium
+    environment:
+      DB_HOST: "host.docker.internal"
+      DB_PORT: "3306"
+      DB_DATABASE: "benchmark"
+      DB_USERNAME: "root"
+      DB_PASSWORD: ""
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
