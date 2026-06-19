@@ -7,7 +7,7 @@ Each framework runs inside its own Docker container with **Nginx + PHP-FPM**, de
 
 | Framework | Version | Port | Template Engine |
 |-----------|---------|------|----------------|
-| [Webrium](https://github.com/webrium/webrium) | latest | 8001 | Webrium View |
+| [Webrium](https://github.com/webrium/webrium) | 5 | 8001 | Webrium View |
 | [Laravel](https://laravel.com) | 11.x | 8002 | Blade |
 | [CodeIgniter](https://codeigniter.com) | 4.x | 8003 | PHP native |
 | [Symfony](https://symfony.com) | 7.x | 8004 | Twig |
@@ -32,56 +32,61 @@ Each endpoint returns the same 10-user dataset. No database queries are involved
 
 ## Results
 
-> Tested on: June 16, 2026
+> Tested on: June 19, 2026
 > All frameworks run with default configuration. No caching layers, no query optimizers, no custom FPM tuning.
+> CPU and memory are sampled roughly once per second **throughout** each run (not just before/after), and reported as average / peak across the test.
 
 ### /bench/render
 
-| Framework | Req/sec | Avg latency | p99 latency | Memory delta | CPU after |
-|-----------|---------|-------------|-------------|--------------|-----------|
-| Webrium | **12,157** | 8.3ms | 17.3ms | +7 MiB | 0.7% |
-| Symfony | 3,632 | 28.2ms | 61.9ms | +7 MiB | 2.2% |
-| CodeIgniter | 3,119 | 32.4ms | 64.6ms | +6 MiB | 9.0% |
-| Laravel | 528 | 189.8ms | 422ms | +35 MiB | 63% |
+| Framework | Req/sec | Avg latency | p99 latency | CPU avg | CPU peak | Mem avg | Mem peak |
+|-----------|---------|-------------|-------------|---------|----------|---------|----------|
+| Webrium | **11,865** | 8.5ms | 14.6ms | 540% | 565% | 37 MiB | 38 MiB |
+| Symfony | 3,679 | 27.5ms | 56.3ms | 513% | 540% | 43 MiB | 44 MiB |
+| CodeIgniter | 3,105 | 32.5ms | 62.6ms | 500% | 525% | 41 MiB | 42 MiB |
+| Laravel | 465 | 219.8ms | 592.7ms | 480% | 506% | 70 MiB | 81 MiB |
 
 ### /bench/json
 
-| Framework | Req/sec | Avg latency | p99 latency | Memory delta | CPU after |
-|-----------|---------|-------------|-------------|--------------|-----------|
-| Webrium | **14,024** | 7.2ms | 13.1ms | +5 MiB | 0.9% |
-| Symfony | 4,222 | 23.7ms | 34.4ms | +5 MiB | 1.9% |
-| CodeIgniter | 3,280 | 31.2ms | 62.6ms | +3 MiB | 9.2% |
-| Laravel | 441 | 228ms | 549ms | +28 MiB | 149% |
+| Framework | Req/sec | Avg latency | p99 latency | CPU avg | CPU peak | Mem avg | Mem peak |
+|-----------|---------|-------------|-------------|---------|----------|---------|----------|
+| Webrium | **13,526** | 7.5ms | 11.7ms | 567% | 583% | 38 MiB | 40 MiB |
+| Symfony | 4,267 | 23.4ms | 32.9ms | 527% | 543% | 44 MiB | 45 MiB |
+| CodeIgniter | 3,362 | 29.7ms | 43.0ms | 515% | 528% | 40 MiB | 41 MiB |
+| Laravel | 392 | 257.1ms | 638.6ms | 492% | 509% | 90 MiB | 99 MiB |
 
 ### Latency distribution - /bench/render
 
 | Percentile | Webrium | Symfony | CodeIgniter | Laravel |
 |------------|---------|---------|-------------|---------|
-| p50 | 7.9ms | 26.3ms | 30.7ms | 174ms |
-| p75 | 8.2ms | 27.4ms | 32.0ms | 231ms |
-| p90 | 8.7ms | 29.9ms | 34.2ms | 293ms |
-| p99 | 17.3ms | 61.9ms | 64.6ms | 422ms |
-| Max | 52ms | 254ms | 212ms | 804ms |
+| p50 | 8.2ms | 26.2ms | 31.0ms | 186.3ms |
+| p75 | 8.5ms | 27.2ms | 32.2ms | 267.3ms |
+| p90 | 8.9ms | 28.9ms | 34.2ms | 364.2ms |
+| p99 | 14.6ms | 56.3ms | 62.6ms | 592.7ms |
+| Max | 57.3ms | 194.6ms | 216.3ms | 996.2ms |
 
 ### Latency distribution - /bench/json
 
 | Percentile | Webrium | Symfony | CodeIgniter | Laravel |
 |------------|---------|---------|-------------|---------|
-| p50 | 7.0ms | 23.3ms | 29.6ms | 207ms |
-| p75 | 7.2ms | 24.2ms | 31.0ms | 283ms |
-| p90 | 7.6ms | 25.2ms | 32.7ms | 357ms |
-| p99 | 13.1ms | 34.4ms | 62.6ms | 549ms |
-| Max | 49ms | 161ms | 273ms | 1130ms |
+| p50 | 7.3ms | 23.1ms | 29.3ms | 222.5ms |
+| p75 | 7.6ms | 24.2ms | 30.6ms | 341.9ms |
+| p90 | 7.9ms | 25.4ms | 32.3ms | 442.4ms |
+| p99 | 11.7ms | 32.9ms | 43.0ms | 638.6ms |
+| Max | 47.8ms | 61.1ms | 56.3ms | 1150ms |
 
 ## Notable observations
 
-**Webrium CPU usage stayed below 1% throughout both tests.** At 12,000+ req/s, the container showed 0.7% CPU after the test run - meaning the framework never saturated the server and wrk itself was the bottleneck, not PHP.
+**All four frameworks saturated the CPU under load.** With CPU sampled throughout the run, every framework sat in the ~480-580% range (the container had roughly 6 cores available), meaning each one fully used the CPU it was given. CPU usage alone is therefore not a useful differentiator here - what matters is how many requests each framework delivered for that same saturated CPU. Webrium turned saturated CPU into ~11,900 req/s on `/bench/render`, while Laravel produced ~465 req/s from a comparable CPU load. This is the throughput-per-core gap that the old idle before/after snapshots completely hid.
 
-**Symfony outperformed CodeIgniter despite being a heavier framework.** In production mode, Symfony compiles its entire routing and service container into cached PHP files, reducing per-request overhead significantly. CodeIgniter does not apply this level of compilation caching.
+**Memory is where the frameworks separate cleanly.** Webrium, CodeIgniter, and Symfony all held steady between ~37 and ~45 MiB across both endpoints, with very little spread between average and peak. Laravel used noticeably more - ~70 MiB average (81 MiB peak) on render and ~90 MiB average (99 MiB peak) on JSON - and showed a wider gap between average and peak, indicating more memory churn per request.
 
-**Laravel's JSON endpoint was slower than its render endpoint** (441 vs 528 req/s). This is because Laravel's `response()->json()` pipeline triggers additional service resolution layers compared to rendering a Blade view, resulting in higher CPU usage (up to 149%) and greater memory growth.
+**Laravel's JSON endpoint was slower than its render endpoint** (392 vs 465 req/s). Laravel's `response()->json()` pipeline triggers additional service-resolution layers compared to rendering a Blade view, and this shows up as both lower throughput and higher memory use (90 MiB average on JSON vs 70 MiB on render).
 
-**All four frameworks showed clean, consistent latency distributions** with low standard deviation - confirming the test conditions were stable and results are reproducible.
+**Symfony outperformed CodeIgniter despite being a heavier framework.** In production mode, Symfony compiles its routing and service container into cached PHP files, reducing per-request overhead. CodeIgniter does not apply this level of compilation caching.
+
+**Latency distributions stayed tight for the three faster frameworks.** Webrium, Symfony, and CodeIgniter all showed low standard deviation and a small p50-to-p99 spread, confirming stable test conditions. Laravel's distribution was much wider (e.g. 222ms p50 rising to 639ms p99 on JSON), consistent with a framework operating close to its throughput ceiling under this load.
+
+> Note on sampling: because each `docker stats` reading takes roughly one second, a 30-second run yields about 15 samples per framework. The averages and peaks above are computed from those samples. Increasing the run duration or lowering the sample interval would tighten these figures further.
 
 ## How to run
 
@@ -182,7 +187,7 @@ php-benchmark/
 - PHP 8.2 with OPcache enabled at default settings
 - Nginx + PHP-FPM with default worker configuration - no tuning applied
 - A 30-second cooldown period between each test run allows CPU and memory to return to idle
-- Memory is measured before and after each test using `docker stats`
+- CPU and memory are sampled with `docker stats` roughly once per second **while the load test is running**, and reported as average and peak across all samples - not just a single before/after snapshot
 - All responses are validated via a Lua script - only HTTP 200 responses are counted
 - Frameworks are tested in the same order each run
 
